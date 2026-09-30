@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AnimeSchedule Sync</title>
+</head>
+<body>
+<div id="AnimeScheduleManagerPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button">
+
+<style>
+#AnimeScheduleManagerPage .as-wrap{max-width:1180px;margin:0 auto;padding-bottom:4rem}
+#AnimeScheduleManagerPage .as-head{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap}
+#AnimeScheduleManagerPage .as-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin:1rem 0}
+#AnimeScheduleManagerPage .as-card{padding:1rem;border:1px solid rgba(255,255,255,.18);border-radius:.55rem;background:rgba(255,255,255,.035)}
+#AnimeScheduleManagerPage .as-card strong{display:block;font-size:1.55rem;margin-top:.3rem}
+#AnimeScheduleManagerPage .as-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+#AnimeScheduleManagerPage .as-section{margin-top:2.25rem}
+#AnimeScheduleManagerPage .as-row{padding:.75rem 0;border-bottom:1px solid rgba(255,255,255,.14)}
+#AnimeScheduleManagerPage .as-season{display:grid;grid-template-columns:minmax(240px,2fr) 95px minmax(220px,1.5fr) auto;gap:.75rem;align-items:center;padding:.8rem 0;border-bottom:1px solid rgba(255,255,255,.14)}
+#AnimeScheduleManagerPage .as-muted{opacity:.72}
+#AnimeScheduleManagerPage .as-good{color:#7ee2a8}
+#AnimeScheduleManagerPage .as-warn{color:#ffca75}
+#AnimeScheduleManagerPage .as-bad{color:#ff8e8e}
+#AnimeScheduleManagerPage .as-code{font-family:monospace;word-break:break-all}
+#AnimeScheduleManagerPage .as-result{display:block;width:100%;text-align:left;margin:.35rem 0}
+#AnimeScheduleManagerPage .as-subtitle{opacity:.72;margin-top:-.5rem}
+@media(max-width:850px){#AnimeScheduleManagerPage .as-season{grid-template-columns:1fr}}
+</style>
+
+<div data-role="content"><div class="content-primary as-wrap">
+    <div class="as-head">
+        <div>
+            <h1>AnimeSchedule Sync</h1>
+            <p>Dashboard, mappings, bulk sync and retry tools.</p>
+        </div>
+        <div class="as-actions">
+            <button is="emby-button" id="RefreshAll" type="button" class="raised emby-button">Refresh</button>
+            <button is="emby-button" id="OpenSettings" type="button" class="raised emby-button">Plugin Settings</button>
+        </div>
+    </div>
+
+    <p><a href="configurationpage?name=AnimeScheduleConnections">Manage connections and sync modes</a></p>
+    <label>Jellyfin user for library and manual sync: <select id="SyncUser"></select></label>
+    <p id="ConnectionStatus">Loading…</p>
+
+    <div class="as-grid">
+        <div class="as-card">Session syncs<strong id="SuccessCount">0</strong></div>
+        <div class="as-card">Session failures<strong id="FailureCount">0</strong></div>
+        <div class="as-card">Shows added<strong id="AddedCount">0</strong></div>
+        <div class="as-card">Updates<strong id="UpdatedCount">0</strong></div>
+        <div class="as-card">Retries<strong id="RetryCount">0</strong></div>
+        <div class="as-card">Mappings<strong id="MappingCount">0</strong></div>
+        <div class="as-card">Jellyfin seasons<strong id="SeasonCount">0</strong></div>
+        <div class="as-card">Watched seasons<strong id="WatchedSeasonCount">0</strong></div>
+    </div>
+
+    <section class="as-section">
+        <h2>Quick actions</h2>
+        <div class="as-actions">
+            <button is="emby-button" id="BulkSync" type="button" class="raised emby-button">Bulk Sync Watched Anime</button>
+            <button is="emby-button" id="RetryNow" type="button" class="raised emby-button">Retry All Failed Syncs</button>
+            <button is="emby-button" id="ClearRetries" type="button" class="raised emby-button">Clear Retry Queue</button>
+            <button is="emby-button" id="SystemCheck" type="button" class="raised emby-button">Run System Check</button>
+        </div>
+        <p id="ActionMessage"></p>
+        <p id="LastRefresh" class="as-muted"></p>
+    </section>
+
+    <section class="as-section">
+        <h2>Recent activity</h2>
+        <div id="History"><p class="as-muted">Loading…</p></div>
+    </section>
+
+    <section class="as-section">
+        <h2>Retry queue</h2>
+        <div id="Retries"><p class="as-muted">Loading…</p></div>
+    </section>
+
+    <section class="as-section">
+        <h2>Manual mappings & season tools</h2>
+        <div class="inputContainer">
+            <label class="inputLabel inputLabelUnfocused" for="Filter">Filter Jellyfin series</label>
+            <input is="emby-input" id="Filter" type="text" placeholder="Series name" />
+        </div>
+        <div id="Seasons"><p class="as-muted">Loading…</p></div>
+
+        <h3>AnimeSchedule search</h3>
+        <p id="Target" class="as-muted">Choose Map on a season first.</p>
+        <div class="inputContainer">
+            <input is="emby-input" id="SearchText" type="text" placeholder="Search AnimeSchedule" />
+        </div>
+        <button is="emby-button" id="SearchButton" type="button" class="raised emby-button">Search</button>
+        <div id="SearchResults"></div>
+    </section>
+
+    <section class="as-section">
+        <h2>Diagnostics</h2>
+        <p class="as-muted">Only presence/health information is shown; secrets are never displayed.</p>
+        <div id="Diagnostics">Loading…</div>
+    </section>
+</div></div>
+
+<script type="text/javascript">
+(function(){
+    var page=document.querySelector('#AnimeScheduleManagerPage');
+    var initialized=false, library=[], mappings=[], selected=null;
+
+    function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    function prop(obj,name){
+        if(!obj)return undefined;
+        if(Object.prototype.hasOwnProperty.call(obj,name))return obj[name];
+        var pascal=name.charAt(0).toUpperCase()+name.slice(1);
+        if(Object.prototype.hasOwnProperty.call(obj,pascal))return obj[pascal];
+        return undefined;
+    }
+    function api(path,method,body){
+        if (/^(status|librarySeasons|bulkSync|syncSeason)(\?|$)/.test(path)) {
+            path += (path.indexOf('?') >= 0 ? '&' : '?') + 'userId=' + encodeURIComponent(page.querySelector('#SyncUser').value || '00000000-0000-0000-0000-000000000000');
+        }
+        var o={url:ApiClient.getUrl('AnimeSchedule/'+path),type:method||'GET',dataType:'json'};
+        if(body!==undefined){o.contentType='application/json';o.data=JSON.stringify(body);}
+        return ApiClient.ajax(o);
+    }
+    function msg(text,cls){var e=page.querySelector('#ActionMessage');e.className=cls||'';e.textContent=text||'';}
+    function mapFor(id,season){
+        for(var i=0;i<mappings.length;i++){
+            if(String(prop(mappings[i],'seriesId')).toLowerCase()===String(id).toLowerCase()
+               && Number(prop(mappings[i],'seasonNumber'))===Number(season))return mappings[i];
+        }
+        return null;
+    }
+
+    function loadStatus(){
+        return api('status').then(function(d){
+            var e=page.querySelector('#ConnectionStatus');
+            if(d.connected){e.className='as-good';e.textContent='Connected to AnimeSchedule.';}
+            else if(d.configured){e.className='as-warn';e.textContent='Configured, but OAuth is not connected.';}
+            else{e.className='as-warn';e.textContent=d.mode==='None'?'Sync disabled for this user.':'Not fully configured. Open Connections or Plugin Settings.';}
+        }).catch(function(e){page.querySelector('#ConnectionStatus').textContent='Status failed: '+e;});
+    }
+
+    function loadDashboard(){
+        return api('dashboard').then(function(d){
+            var retries=prop(d,'retryQueue')||[];
+            var history=prop(d,'recentHistory')||[];
+            page.querySelector('#SuccessCount').textContent=prop(d,'successfulActions')||0;
+            page.querySelector('#FailureCount').textContent=prop(d,'failedActions')||0;
+            page.querySelector('#AddedCount').textContent=prop(d,'addedShows')||0;
+            page.querySelector('#UpdatedCount').textContent=prop(d,'updatedShows')||0;
+            page.querySelector('#RetryCount').textContent=retries.length;
+
+            var h='';
+            history.forEach(function(x){
+                var ts=prop(x,'timestampUtc');
+                h+='<div class="as-row"><strong>'+esc(prop(x,'action'))+'</strong> — '+esc(prop(x,'seriesName'))+' [user '+esc(prop(x,'userId'))+'] S'+prop(x,'seasonNumber')+'E'+prop(x,'episodeNumber')+
+                   (prop(x,'animeTitle')?' → <strong>'+esc(prop(x,'animeTitle'))+'</strong>':'')+
+                   '<br><span class="as-muted">'+esc(ts?new Date(ts).toLocaleString():'')+'</span><br>'+esc(prop(x,'message'))+'</div>';
+            });
+            page.querySelector('#History').innerHTML=h||'<p class="as-muted">No sync events recorded since this Jellyfin/plugin restart.</p>';
+
+            var r='';
+            retries.forEach(function(x){
+                var next=prop(x,'nextAttemptUtc');
+                r+='<div class="as-row"><strong>'+esc(prop(x,'seriesName'))+' [user '+esc(prop(x,'userId'))+'] S'+prop(x,'seasonNumber')+'E'+prop(x,'episodeNumber')+'</strong>'+
+                   '<br><span class="as-muted">Attempts '+(prop(x,'attempts')||0)+' • next '+esc(next?new Date(next).toLocaleString():'')+'</span>'+
+                   '<br>'+esc(prop(x,'reason'))+'</div>';
+            });
+            page.querySelector('#Retries').innerHTML=r||'<p class="as-muted">Retry queue is empty.</p>';
+        }).catch(function(e){
+            page.querySelector('#History').innerHTML='<p class="as-bad">Dashboard failed: '+esc(e)+'</p>';
+            page.querySelector('#Retries').innerHTML='<p class="as-bad">Dashboard failed: '+esc(e)+'</p>';
+        });
+    }
+
+    function loadDiagnostics(){
+        return api('diagnostics').then(function(d){
+            page.querySelector('#MappingCount').textContent=prop(d,'structuredMappings')||0;
+            page.querySelector('#Diagnostics').innerHTML=
+              '<div class="as-grid">'+
+              '<div class="as-card">Version<strong>'+esc(prop(d,'pluginVersion'))+'</strong></div>'+
+              '<div class="as-card">Client ID<strong>'+(prop(d,'clientIdLength')>0?'Stored':'Missing')+'</strong></div>'+
+              '<div class="as-card">Client Secret<strong>'+(prop(d,'clientSecretStored')?'Stored':'Missing')+'</strong></div>'+
+              '<div class="as-card">Application Token<strong>'+(prop(d,'applicationTokenStored')?'Stored':'Missing')+'</strong></div>'+
+              '<div class="as-card">Assigned users<strong>'+Number(prop(d,'assignedUsers')||0)+'</strong></div>'+
+              '<div class="as-card">Server OAuth token<strong>'+(prop(d,'accessTokenStored')?'Stored':'Missing')+'</strong></div>'+
+              '</div>';
+        }).catch(function(e){page.querySelector('#Diagnostics').innerHTML='<p class="as-bad">Diagnostics failed: '+esc(e)+'</p>';});
+    }
+
+    function selectTarget(btn){
+        selected={seriesId:btn.getAttribute('data-series'),seriesName:btn.getAttribute('data-name'),seasonNumber:Number(btn.getAttribute('data-season'))};
+        page.querySelector('#Target').textContent=selected.seriesName+' — Season '+selected.seasonNumber;
+    }
+
+    function saveMapping(match){
+        if(!selected)return;
+        return api('mappings','POST',{seriesId:selected.seriesId,seriesName:selected.seriesName,seasonNumber:selected.seasonNumber,route:prop(match,'route'),animeTitle:prop(match,'title')})
+        .then(function(){page.querySelector('#SearchResults').innerHTML='<p class="as-good">Mapping saved.</p>';return loadLibrary();})
+        .catch(function(e){page.querySelector('#SearchResults').innerHTML='<p class="as-bad">Save failed: '+esc(e)+'</p>';});
+    }
+
+    function bindSeasonButtons(){
+        Array.prototype.forEach.call(page.querySelectorAll('.as-test'),function(b){b.addEventListener('click',function(){
+            selectTarget(b);page.querySelector('#SearchResults').textContent='Testing automatic match…';
+            api('testMatch?seriesId='+encodeURIComponent(selected.seriesId)+'&seasonNumber='+selected.seasonNumber).then(function(m){
+                page.querySelector('#SearchResults').innerHTML='<div class="as-card"><strong>'+esc(prop(m,'title'))+'</strong><div class="as-code">'+esc(prop(m,'route'))+'</div><div>'+prop(m,'episodes')+' episodes'+(prop(m,'malId')?' • MAL '+esc(prop(m,'malId')):'')+'</div><button type="button" id="UseMatch" class="raised emby-button">Use this mapping</button></div>';
+                page.querySelector('#UseMatch').addEventListener('click',function(){saveMapping(m);});
+            }).catch(function(e){page.querySelector('#SearchResults').innerHTML='<p class="as-bad">Test failed: '+esc(e)+'</p>';});
+        });});
+
+        Array.prototype.forEach.call(page.querySelectorAll('.as-map'),function(b){b.addEventListener('click',function(){
+            selectTarget(b);page.querySelector('#SearchText').value=selected.seriesName+(selected.seasonNumber>1?' Season '+selected.seasonNumber:'');page.querySelector('#SearchText').focus();
+        });});
+
+        Array.prototype.forEach.call(page.querySelectorAll('.as-sync'),function(b){b.addEventListener('click',function(){
+            selectTarget(b);msg('Syncing '+selected.seriesName+' season '+selected.seasonNumber+'…');
+            api('syncSeason?seriesId='+encodeURIComponent(selected.seriesId)+'&seasonNumber='+selected.seasonNumber,'POST').then(function(r){
+                msg(prop(r,'message'),prop(r,'synced')?'as-good':'as-warn');loadDashboard();
+            }).catch(function(e){msg('Season sync failed: '+e,'as-bad');});
+        });});
+
+        Array.prototype.forEach.call(page.querySelectorAll('.as-remove'),function(b){b.addEventListener('click',function(){
+            api('mappings?seriesId='+encodeURIComponent(b.getAttribute('data-series'))+'&seasonNumber='+encodeURIComponent(b.getAttribute('data-season')),'DELETE').then(loadLibrary);
+        });});
+    }
+
+    function renderLibrary(){
+        var f=(page.querySelector('#Filter').value||'').trim().toLowerCase(), out='', shown=0;
+        library.forEach(function(x){
+            if(shown>=300)return;
+            var seriesName=prop(x,'seriesName')||'Unknown Series';
+            var seriesId=prop(x,'seriesId');
+            var seasonNumber=Number(prop(x,'seasonNumber')||1);
+            var episodeCount=Number(prop(x,'episodeCount')||0);
+            var playedCount=Number(prop(x,'playedCount')||0);
+            var highestPlayed=Number(prop(x,'highestPlayedEpisode')||0);
+            if(f&&seriesName.toLowerCase().indexOf(f)<0)return;
+            shown++;
+            var mapping=mapFor(seriesId,seasonNumber);
+            var mappedTitle=mapping?(prop(mapping,'animeTitle')||prop(mapping,'route')):'';
+            var mappedRoute=mapping?prop(mapping,'route'):'';
+            out+='<div class="as-season"><div><strong>'+esc(seriesName)+'</strong><br><span class="as-muted">'+playedCount+'/'+episodeCount+' watched; highest E'+highestPlayed+'</span></div>'+
+              '<div>Season '+seasonNumber+'</div>'+
+              '<div>'+(mapping?'<span class="as-good">'+esc(mappedTitle)+'</span><br><span class="as-code">'+esc(mappedRoute)+'</span>':'<span class="as-muted">Automatic matching</span>')+'</div>'+
+              '<div class="as-actions">'+
+              '<button type="button" class="raised emby-button as-test" data-series="'+esc(seriesId)+'" data-name="'+esc(seriesName)+'" data-season="'+seasonNumber+'">Test Match</button>'+
+              '<button type="button" class="raised emby-button as-map" data-series="'+esc(seriesId)+'" data-name="'+esc(seriesName)+'" data-season="'+seasonNumber+'">Map</button>'+
+              '<button type="button" class="raised emby-button as-sync" data-series="'+esc(seriesId)+'" data-name="'+esc(seriesName)+'" data-season="'+seasonNumber+'" '+(playedCount===0?'disabled':'')+'>Sync Now</button>'+
+              (mapping?'<button type="button" class="raised emby-button as-remove" data-series="'+esc(seriesId)+'" data-season="'+seasonNumber+'">Remove</button>':'')+
+              '</div></div>';
+        });
+        page.querySelector('#Seasons').innerHTML=out||'<p class="as-muted">No matching seasons.</p>';bindSeasonButtons();
+    }
+
+    function loadLibrary(){
+        return Promise.all([api('librarySeasons'),api('mappings')]).then(function(v){
+            library=v[0]||[];mappings=v[1]||[];
+            page.querySelector('#MappingCount').textContent=mappings.length;
+            page.querySelector('#SeasonCount').textContent=library.length;
+            var watched=0;
+            library.forEach(function(x){if(Number(prop(x,'playedCount')||0)>0)watched++;});
+            page.querySelector('#WatchedSeasonCount').textContent=watched;
+            renderLibrary();
+        }).catch(function(e){page.querySelector('#Seasons').innerHTML='<p class="as-bad">Library/mappings failed: '+esc(e)+'</p>';});
+    }
+
+    function loadUsers(){
+        return api('connections').then(function(data){
+            if (!data.isAdmin) {
+                if(window.Dashboard&&Dashboard.navigate) Dashboard.navigate('configurationpage?name=AnimeScheduleConnections');
+                throw new Error('Use the Connections page for your personal account.');
+            }
+            var select=page.querySelector('#SyncUser'), previous=select.value;
+            select.replaceChildren();
+            data.users.forEach(function(user){
+                var option=document.createElement('option'); option.value=user.userId;
+                option.textContent=user.name+' — '+user.status; select.append(option);
+            });
+            if (data.users.some(function(u){return u.userId===previous;})) select.value=previous;
+        });
+    }
+
+    function refreshAll(){
+        msg('');
+        return loadUsers().then(function(){return Promise.all([loadStatus(),loadDashboard(),loadDiagnostics(),loadLibrary()]);}).then(function(){
+            page.querySelector('#LastRefresh').textContent='Last refreshed '+new Date().toLocaleTimeString()+'. Session counters reset when Jellyfin/plugin restarts.';
+        });
+    }
+
+    function bind(){
+        page.querySelector('#SyncUser').addEventListener('change',refreshAll);
+        page.querySelector('#RefreshAll').addEventListener('click',refreshAll);
+        page.querySelector('#OpenSettings').addEventListener('click',function(){
+            if(window.Dashboard&&Dashboard.navigate){Dashboard.navigate('configurationpage?name=AnimeScheduleSync');}
+            else{window.location.hash='#!/configurationpage?name=AnimeScheduleSync';}
+        });
+        page.querySelector('#BulkSync').addEventListener('click',function(){
+            if(!window.confirm('Bulk sync every Jellyfin season that has watched episodes to AnimeSchedule?'))return;
+            msg('Bulk syncing watched anime…');
+            api('bulkSync','POST').then(function(r){
+                var failed=Number(prop(r,'failed')||0);
+                msg('Bulk sync: '+(prop(r,'synced')||0)+' synced, '+(prop(r,'skipped')||0)+' skipped, '+failed+' failed.',failed?'as-warn':'as-good');
+                refreshAll();
+            }).catch(function(e){msg('Bulk sync failed: '+e,'as-bad');});
+        });
+        page.querySelector('#RetryNow').addEventListener('click',function(){msg('Retrying queued failures…');api('retryNow','POST').then(function(r){msg('Processed '+(prop(r,'processed')||0)+' retry item(s).','as-good');refreshAll();}).catch(function(e){msg('Retry failed: '+e,'as-bad');});});
+        page.querySelector('#ClearRetries').addEventListener('click',function(){api('clearRetries','POST').then(function(r){msg('Cleared '+(prop(r,'cleared')||0)+' retry item(s).','as-good');refreshAll();}).catch(function(e){msg('Clear failed: '+e,'as-bad');});});
+        page.querySelector('#SystemCheck').addEventListener('click',function(){
+            msg('Running AnimeSchedule Sync system check…');
+            Promise.all([api('status'),api('diagnostics'),api('librarySeasons'),api('mappings')]).then(function(v){
+                var status=v[0]||{},diag=v[1]||{},seasons=v[2]||[],maps=v[3]||[];
+                var problems=[];
+                if(!prop(status,'connected'))problems.push('OAuth is not connected');
+                if(!prop(diag,'applicationTokenStored'))problems.push('Application Token is missing');
+
+                if(seasons.length===0)problems.push('No Jellyfin episode seasons were returned');
+                if(problems.length){msg('System check: '+problems.join('; ')+'.','as-warn');}
+                else{msg('System check passed: AnimeSchedule connected, credentials present, Jellyfin library readable ('+seasons.length+' seasons), '+maps.length+' manual mapping(s).','as-good');}
+            }).catch(function(e){msg('System check failed: '+e,'as-bad');});
+        });
+        page.querySelector('#Filter').addEventListener('input',renderLibrary);
+        page.querySelector('#SearchButton').addEventListener('click',function(){
+            var q=(page.querySelector('#SearchText').value||'').trim();
+            if(!selected){page.querySelector('#SearchResults').innerHTML='<p class="as-warn">Choose Map on a season first.</p>';return;}
+            if(!q)return;
+            page.querySelector('#SearchResults').textContent='Searching…';
+            api('search?q='+encodeURIComponent(q)).then(function(rs){
+                var out='';for(var i=0;i<rs.length;i++){out+='<button type="button" class="raised emby-button as-result" data-index="'+i+'"><strong>'+esc(prop(rs[i],'title'))+'</strong><br><span class="as-code">'+esc(prop(rs[i],'route'))+'</span> — '+prop(rs[i],'episodes')+' episodes'+(prop(rs[i],'malId')?' • MAL '+esc(prop(rs[i],'malId')):'')+'</button>';}
+                page.querySelector('#SearchResults').innerHTML=out||'<p class="as-muted">No results.</p>';
+                Array.prototype.forEach.call(page.querySelectorAll('.as-result'),function(b){b.addEventListener('click',function(){saveMapping(rs[Number(b.getAttribute('data-index'))]);});});
+            }).catch(function(e){page.querySelector('#SearchResults').innerHTML='<p class="as-bad">Search failed: '+esc(e)+'</p>';});
+        });
+    }
+
+    function init(){if(initialized)return;initialized=true;bind();refreshAll();}
+    page.addEventListener('pageshow',function(){if(!initialized)init();else refreshAll();});
+    setTimeout(init,0);
+})();
+</script>
+</div>
+</body>
+</html>

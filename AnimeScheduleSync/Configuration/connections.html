@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html><head><title>AnimeSchedule Connections</title></head><body>
+<div id="AnimeConnectionsPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-checkbox">
+<div data-role="content"><div class="content-primary" style="max-width:1000px">
+<h1>AnimeSchedule Connections</h1>
+<p>Choose where each Jellyfin user's watched anime progress is sent. New users start with None.</p>
+<p><strong>Shared account warning:</strong> Everyone using Server / Shared contributes playback activity to the same external anime profile. One user's progress may overwrite another's, including when starting a rewatch.</p>
+<p id="ConnectionMessage" role="status"></p>
+<div id="ServerControls" hidden>
+<h2>Server Connection</h2>
+<p id="ServerStatus"></p>
+<button is="emby-button" type="button" id="ConnectServer" class="raised">Connect server account</button>
+<button is="emby-button" type="button" id="DisconnectServer" class="raised">Disconnect server account</button>
+<p><label><input type="checkbox" id="AllowSelf" /> Allow users to change their own sync mode</label></p>
+<p>When disabled, only administrators can change assignments. Users can still connect or disconnect their own personal account.</p>
+<button is="emby-button" type="button" id="SavePolicy" class="raised">Save permission</button>
+<button is="emby-button" type="button" id="ApplicationSettings" class="raised">Application settings</button>
+</div>
+<h2 id="UsersHeading">My connection</h2>
+<p id="ModePermission"></p>
+<div id="ConnectionUsers"></div>
+<button is="emby-button" type="button" id="RefreshConnections" class="raised">Refresh connections</button>
+</div></div>
+<script>
+(function () {
+    const page = document.querySelector('#AnimeConnectionsPage');
+    const q = s => page.querySelector(s);
+    function api(path, method, body) {
+        const options = {url: ApiClient.getUrl('AnimeSchedule/' + path), type: method || 'GET', dataType: 'json'};
+        if (body !== undefined) { options.contentType = 'application/json'; options.data = JSON.stringify(body); }
+        return ApiClient.ajax(options);
+    }
+    function error() { q('#ConnectionMessage').textContent = 'Could not complete the request. Check your permissions and application settings, then refresh.'; }
+    function button(text, action) {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = text; b.className = 'raised emby-button';
+        b.addEventListener('click', async () => { b.disabled = true; try { await action(); } catch (_) { error(); } finally { b.disabled = false; } });
+        return b;
+    }
+    async function connect(userId) {
+        const data = await api('connections/authStart' + (userId ? '?userId=' + encodeURIComponent(userId) : ''), 'POST');
+        window.location.assign(data.url);
+    }
+    async function disconnect(userId) {
+        await api('connections/disconnect' + (userId ? '?userId=' + encodeURIComponent(userId) : ''), 'POST');
+        await load();
+    }
+    async function load() {
+        try {
+            const data = await api('connections');
+            q('#ServerControls').hidden = !data.isAdmin;
+            q('#ServerStatus').textContent = data.serverConnected ? 'Server account connected.' : 'No server account connected.';
+            q('#AllowSelf').checked = data.allowUsersToChangeSyncMode;
+            q('#UsersHeading').textContent = data.isAdmin ? 'Jellyfin users' : 'My connection';
+            q('#ModePermission').textContent = !data.isAdmin && !data.allowUsersToChangeSyncMode ? 'Your administrator controls your sync mode.' : '';
+            q('#ConnectionUsers').replaceChildren();
+            for (const user of data.users) {
+                const row = document.createElement('section'); row.style.cssText = 'padding:1rem 0;border-bottom:1px solid #888';
+                const title = document.createElement('h3'); title.textContent = user.name; row.append(title);
+                const status = document.createElement('p'); status.textContent = user.status; row.append(status);
+                const label = document.createElement('label'); label.textContent = 'Sync mode: ';
+                const select = document.createElement('select'); select.setAttribute('aria-label', user.name + ' sync mode');
+                for (const [value, text] of [['None','None'],['Personal','Personal'],['ServerShared','Server / Shared']]) {
+                    const option = document.createElement('option'); option.value = value; option.textContent = text; select.append(option);
+                }
+                select.value = user.mode; select.disabled = !(data.isAdmin || data.allowUsersToChangeSyncMode); label.append(select); row.append(label);
+                const save = button('Save mode', async () => {
+                    await api('connections/' + user.userId + '/mode', 'POST', {mode: select.value}); await load();
+                });
+                save.disabled = select.disabled; row.append(save);
+                row.append(button(user.personalConnected ? 'Reconnect personal account' : 'Connect personal account', () => connect(user.userId)));
+                if (user.personalConnected) row.append(button('Disconnect personal account', () => disconnect(user.userId)));
+                const hint = document.createElement('p'); hint.textContent = 'Connecting a personal account does not change the selected sync mode.'; row.append(hint);
+                q('#ConnectionUsers').append(row);
+            }
+        } catch (_) { error(); }
+    }
+    q('#ConnectServer').addEventListener('click', () => connect().catch(error));
+    q('#DisconnectServer').addEventListener('click', () => disconnect().catch(error));
+    q('#SavePolicy').addEventListener('click', async () => {
+        try { await api('connections/policy', 'POST', {allowUsersToChangeSyncMode: q('#AllowSelf').checked}); await load(); q('#ConnectionMessage').textContent = 'Permission saved.'; } catch (_) { error(); }
+    });
+    q('#ApplicationSettings').addEventListener('click', () => { if (window.Dashboard && Dashboard.navigate) Dashboard.navigate('configurationpage?name=AnimeScheduleSync'); else window.location.hash='#!/configurationpage?name=AnimeScheduleSync'; });
+    q('#RefreshConnections').addEventListener('click', load);
+    page.addEventListener('pageshow', load);
+})();
+</script></div></body></html>

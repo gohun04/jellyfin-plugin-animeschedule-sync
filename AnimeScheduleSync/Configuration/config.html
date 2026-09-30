@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AnimeSchedule Sync</title>
+</head>
+<body>
+<div id="AnimeScheduleSyncConfigPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-checkbox">
+
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="AnimeScheduleSyncConfigForm">
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">AnimeSchedule Sync</h2>
+                    <p>
+                        Sync watched anime episodes from selected Jellyfin users to
+                        AnimeSchedule.net.
+                    </p>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="ClientId">
+                        AnimeSchedule Application ID
+                    </label>
+                    <input is="emby-input" id="ClientId" type="text" autocomplete="off" />
+                    <div class="fieldDescription">
+                        The ID shown under AnimeSchedule → Settings → API → Your Applications.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="ClientSecret">
+                        AnimeSchedule OAuth Client Secret
+                    </label>
+                    <input is="emby-input" id="ClientSecret" type="password" autocomplete="new-password" />
+                    <div class="fieldDescription">
+                        The secret generated when you created the AnimeSchedule application.
+                        This is separate from the Application Token. Keep it private.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="ApplicationToken">
+                        AnimeSchedule Application Token
+                    </label>
+                    <input is="emby-input" id="ApplicationToken" type="password" autocomplete="new-password" />
+                    <div class="fieldDescription">
+                        Click Reveal beside Token on AnimeSchedule. Keep this value private.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="RedirectUri">
+                        Redirect URI
+                    </label>
+                    <input is="emby-input" id="RedirectUri" type="url" />
+                </div>
+
+                <h2>Server Connection and user assignments</h2>
+                <p>Manage the shared server account, each user's Personal / Server / None mode, and self-service permissions on the Connections page.</p>
+                <p><a href="configurationpage?name=AnimeScheduleConnections">Open AnimeSchedule Connections</a></p>
+
+                <label class="emby-checkbox-label">
+                    <input is="emby-checkbox" id="AutoSync" type="checkbox" />
+                    <span>Automatically sync watched episodes</span>
+                </label>
+
+                <label class="emby-checkbox-label">
+                    <input is="emby-checkbox" id="NeverDecreaseProgress" type="checkbox" />
+                    <span>Never decrease AnimeSchedule episode progress</span>
+                </label>
+
+                <label class="emby-checkbox-label">
+                    <input is="emby-checkbox" id="SetWatchingStatus" type="checkbox" />
+                    <span>Set status to Watching when progress advances</span>
+                </label>
+
+                <label class="emby-checkbox-label">
+                    <input is="emby-checkbox" id="SetCompletedStatus" type="checkbox" />
+                    <span>Set status to Completed at the final episode</span>
+                </label>
+
+                <label class="emby-checkbox-label">
+                    <input is="emby-checkbox" id="SeasonAwareMatching" type="checkbox" />
+                    <span>Season-aware matching for season 2+ (recommended)</span>
+                </label>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="SeasonRouteOverrides">
+                        Season Route Overrides
+                    </label>
+                    <textarea is="emby-textarea" id="SeasonRouteOverrides" rows="5"></textarea>
+                    <div class="fieldDescription">
+                        Optional fallback for stubborn multi-season anime. One rule per line:
+                        <code>Series Name|2=anime-schedule-route</code>
+                    </div>
+                </div>
+
+                <label class="emby-checkbox-label">
+                    <input is="emby-checkbox" id="AutoAddMissingShows" type="checkbox" />
+                    <span>Automatically add newly watched anime to AnimeSchedule when the API permits it</span>
+                </label>
+
+                <label class="emby-checkbox-label">
+                    <input is="emby-checkbox" id="EnableRewatchMode" type="checkbox" />
+                    <span>Rewatch mode: playing episode 1 of a Completed anime restarts it as Watching</span>
+                </label>
+
+                <br />
+
+                <button is="emby-button"
+                        type="submit"
+                        class="raised button-submit block emby-button">
+                    <span>Save</span>
+                </button>
+
+            </form>
+        </div>
+    </div>
+
+<script type="text/javascript">
+(function () {
+    const pluginId = 'e3fe9af5-7c4f-4e7f-9f4e-0e1a2d84f8a9';
+    const page = document.querySelector('#AnimeScheduleSyncConfigPage');
+    const form = document.querySelector('#AnimeScheduleSyncConfigForm');
+    const status = document.querySelector('#ConnectionStatus');
+
+    function load() {
+        Dashboard.showLoadingMsg();
+        ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+            document.querySelector('#ClientId').value = config.ClientId || '';
+            document.querySelector('#ClientSecret').value = config.ClientSecret || '';
+            document.querySelector('#ApplicationToken').value = config.ApplicationToken || '';
+            document.querySelector('#RedirectUri').value = config.RedirectUri || '';
+            document.querySelector('#AutoSync').checked = !!config.AutoSync;
+            document.querySelector('#NeverDecreaseProgress').checked = !!config.NeverDecreaseProgress;
+            document.querySelector('#SetWatchingStatus').checked = !!config.SetWatchingStatus;
+            document.querySelector('#SetCompletedStatus').checked = !!config.SetCompletedStatus;
+            document.querySelector('#SeasonAwareMatching').checked = config.SeasonAwareMatching !== false;
+            document.querySelector('#SeasonRouteOverrides').value = config.SeasonRouteOverrides || '';
+            document.querySelector('#AutoAddMissingShows').checked = config.AutoAddMissingShows !== false;
+            document.querySelector('#EnableRewatchMode').checked = config.EnableRewatchMode !== false;
+            Dashboard.hideLoadingMsg();
+
+        });
+    }
+
+    function saveConfiguration(showResult) {
+        Dashboard.showLoadingMsg();
+
+        return ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+            config.ClientId = document.querySelector('#ClientId').value.trim();
+            config.ClientSecret = document.querySelector('#ClientSecret').value;
+            config.ApplicationToken = document.querySelector('#ApplicationToken').value;
+            config.RedirectUri = document.querySelector('#RedirectUri').value.trim();
+            config.AutoSync = document.querySelector('#AutoSync').checked;
+            config.NeverDecreaseProgress = document.querySelector('#NeverDecreaseProgress').checked;
+            config.SetWatchingStatus = document.querySelector('#SetWatchingStatus').checked;
+            config.SetCompletedStatus = document.querySelector('#SetCompletedStatus').checked;
+            config.SeasonAwareMatching = document.querySelector('#SeasonAwareMatching').checked;
+            config.SeasonRouteOverrides = document.querySelector('#SeasonRouteOverrides').value.trim();
+            config.AutoAddMissingShows = document.querySelector('#AutoAddMissingShows').checked;
+            config.EnableRewatchMode = document.querySelector('#EnableRewatchMode').checked;
+
+            return ApiClient.updatePluginConfiguration(pluginId, config);
+        }).then(function () {
+            if (showResult) {
+                Dashboard.processPluginConfigurationUpdateResult();
+            }
+        }).finally(function () {
+            Dashboard.hideLoadingMsg();
+        });
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        saveConfiguration(true);
+        return false;
+    });
+
+    page.addEventListener('pageshow', load);
+})();
+</script>
+</div>
+</body>
+</html>

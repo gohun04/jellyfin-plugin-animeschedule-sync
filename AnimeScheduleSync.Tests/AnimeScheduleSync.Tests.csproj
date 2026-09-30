@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><NuGetAudit>false</NuGetAudit></PropertyGroup>
+<ItemGroup><ProjectReference Include="../AnimeScheduleSync/Jellyfin.Plugin.AnimeScheduleSync.csproj" />
+<PackageReference Include="Jellyfin.Controller" Version="12.0.0" /><PackageReference Include="Jellyfin.Model" Version="12.0.0" />
+<FrameworkReference Include="Microsoft.AspNetCore.App" /></ItemGroup>
+</Project>

@@ -1,0 +1,16 @@
+{
+  "guid": "e3fe9af5-7c4f-4e7f-9f4e-0e1a2d84f8a9",
+  "name": "AnimeSchedule Sync",
+  "description": "Personal, shared server, or disabled anime sync per Jellyfin user; protected connection management and safe legacy migration.",
+  "overview": "AnimeSchedule.net progress synchronization for Jellyfin 12.",
+  "version": "0.5.1.0",
+  "targetAbi": "12.0.0.0",
+  "status": "Active",
+  "autoUpdate": true,
+  "assemblies": [
+    "Jellyfin.Plugin.AnimeScheduleSync.dll"
+  ],
+  "owner": "gohun04",
+  "category": "Sync",
+  "timestamp": "2026-09-28T00:00:00Z"
+}
