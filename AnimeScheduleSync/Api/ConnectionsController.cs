@@ -36,13 +36,18 @@ public sealed class ConnectionsController : ControllerBase
     private bool Exists(Guid id) => id != Guid.Empty && _users.GetUserById(id) is not null;
 
     [HttpGet("connections")]
-    public async Task<IActionResult> GetConnections(CancellationToken ct)
+    public Task<IActionResult> GetConnections(CancellationToken ct) => ConnectionStatus(ct, false);
+
+    [HttpGet("connections/me")]
+    public Task<IActionResult> GetMyConnection(CancellationToken ct) => ConnectionStatus(ct, true);
+
+    private async Task<IActionResult> ConnectionStatus(CancellationToken ct, bool selfOnly)
     {
         await AnimeScheduleClient.ConnectionGate.WaitAsync(ct);
         try
         {
-            if (!Admin && !Exists(Caller)) return Forbid();
-            var users = _users.GetUsers().Where(x => Admin || x.Id == Caller).Select(x =>
+            if ((!Admin || selfOnly) && !Exists(Caller)) return Forbid();
+            var users = _users.GetUsers().Where(x => (Admin && !selfOnly) || x.Id == Caller).Select(x =>
             {
                 var assignment = Config.FindUser(x.Id);
                 var mode = assignment?.Mode ?? SyncMode.None;
@@ -179,7 +184,12 @@ public sealed class ConnectionsController : ControllerBase
             }
             else Config.ServerConnection = connection;
             Plugin.Instance!.SaveConfiguration();
-            return Content("AnimeSchedule connected. Return to Jellyfin and refresh the Connections page. Your sync mode has not changed.", "text/plain");
+            Response.Headers["Referrer-Policy"] = "no-referrer";
+            Response.Headers.CacheControl = "no-store";
+            var accountUrl = System.Net.WebUtility.HtmlEncode((Request.PathBase.Value ?? string.Empty) + "/AnimeSchedule/account");
+            return Content("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>AnimeSchedule connected</title>"
+                + "<h1>AnimeSchedule connected</h1><p>Your sync mode has not changed.</p><p><a href=\"" + accountUrl
+                + "\">Return to my anime connection</a></p></html>", "text/html");
         }
         finally { AnimeScheduleClient.ConnectionGate.Release(); }
     }

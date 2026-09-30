@@ -15,7 +15,13 @@ https://raw.githubusercontent.com/gohun04/jellyfin-plugin-animeschedule-sync/mai
 
 3. Save, open the plugin **Catalogue**, select **AnimeSchedule Sync**, and install.
 4. Restart Jellyfin and open the plugin settings. Supply your own AnimeSchedule application ID, client secret, application token and redirect URI. Register the same redirect URI in AnimeSchedule; it must point to your Jellyfin server's `/AnimeSchedule/authCallback` endpoint, including any server base path.
-5. Open **AnimeSchedule Connections** to connect accounts and select sync modes.
+5. As an administrator, open **AnimeSchedule Connections** to configure accounts, assignments and self-service permissions.
+
+## Settings for regular users
+
+Open `https://YOUR-JELLYFIN-SERVER/AnimeSchedule/account` in a browser (include your Jellyfin base path if configured), and sign in with your Jellyfin username and password. The admin Connections page provides a copyable **User settings link**. Share or bookmark this link; it is not added to regular users' Jellyfin menus or native apps.
+
+Users see only their own connection, can connect/disconnect their personal AnimeSchedule account, and can change mode when the administrator enables **Allow users to change their own sync mode**. The Jellyfin session token is kept only in that browser tab; the password is never retained. Sign out when finished.
 
 Do not upload your Jellyfin configuration XML, OAuth tokens or application secrets to this repository or issues. They are configured privately on your server.
 
@@ -37,7 +43,7 @@ Install the .NET 10 SDK and ASP.NET Core 10 runtime, then run:
 
 ```sh
 dotnet build AnimeScheduleSync -c Release
-dotnet run --project AnimeScheduleSync.Tests
+dotnet run --project AnimeScheduleSync.Tests -- --web
 python3 scripts/package.py
 python3 scripts/validate_catalogue.py
 ```
@@ -45,6 +51,10 @@ python3 scripts/validate_catalogue.py
 The package script produces a versioned ZIP in `packages/`, plus `manifest.json` and SHA-256 checksums. Catalogue ZIPs contain the DLL and metadata directly at their root, as Jellyfin expects. Commit the ZIP and manifest together when publishing a new version. Never replace an already published version's ZIP; increase the version first.
 
 The regression suite uses simulated Jellyfin services and HTTP responses. No real anime account is contacted. Live installation and OAuth still need deployment testing.
+
+## Release 0.5.2
+
+Fix regular-user access with a standalone authenticated account page, a shareable admin link, and an OAuth return link. Existing settings and connections are preserved.
 
 ## Release 0.5.1
 

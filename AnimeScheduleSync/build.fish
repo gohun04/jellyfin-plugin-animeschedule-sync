@@ -24,7 +24,7 @@ or exit $status
 dotnet publish -c Release -o dist/publish
 or exit $status
 
-set -l package_dir "dist/AnimeSchedule Sync_0.5.1.0"
+set -l package_dir "dist/AnimeSchedule Sync_0.5.2.0"
 rm -rf "$package_dir"
 mkdir -p "$package_dir"
 

@@ -21,7 +21,7 @@ with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
         z.writestr(info, data)
 entry = {
     'version': version,
-    'changelog': 'Multi-user Personal / Server / None modes, permission controls, safe migration and isolated retries. Catalogue-ready packaging.',
+    'changelog': 'Fix regular-user access: standalone account page with Jellyfin sign-in, shareable settings link and OAuth return link.',
     'targetAbi': metadata['targetAbi'],
     'sourceUrl': 'https://raw.githubusercontent.com/gohun04/jellyfin-plugin-animeschedule-sync/main/packages/' + archive.name,
     'checksum': hashlib.md5(archive.read_bytes()).hexdigest(),  # Jellyfin catalogue format requires MD5.

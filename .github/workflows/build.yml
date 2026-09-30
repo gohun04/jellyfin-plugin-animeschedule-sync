@@ -13,5 +13,5 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - run: dotnet build AnimeScheduleSync -c Release
-      - run: dotnet run --project AnimeScheduleSync.Tests -c Release
+      - run: dotnet run --project AnimeScheduleSync.Tests -c Release -- --web
       - run: python3 scripts/validate_catalogue.py

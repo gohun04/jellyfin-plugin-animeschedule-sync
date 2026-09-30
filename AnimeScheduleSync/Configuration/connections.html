@@ -7,6 +7,10 @@
 <p><strong>Shared account warning:</strong> Everyone using Server / Shared contributes playback activity to the same external anime profile. One user's progress may overwrite another's, including when starting a rewatch.</p>
 <p id="ConnectionMessage" role="status"></p>
 <div id="ServerControls" hidden>
+<h2>User settings link</h2>
+<p>Share this link with regular users. They sign in with their own Jellyfin account and only see their own connection. Jellyfin's plugin sidebar entries are admin-only.</p>
+<p><a id="UserSettingsLink" target="_blank" rel="noopener">Open user settings</a></p>
+<input id="UserSettingsAddress" type="text" readonly aria-label="User settings link" style="width:100%;padding:.6rem" />
 <h2>Server Connection</h2>
 <p id="ServerStatus"></p>
 <button is="emby-button" type="button" id="ConnectServer" class="raised">Connect server account</button>
@@ -25,6 +29,9 @@
 (function () {
     const page = document.querySelector('#AnimeConnectionsPage');
     const q = s => page.querySelector(s);
+    const userSettingsUrl = new URL(ApiClient.getUrl('AnimeSchedule/account'), window.location.href).href;
+    q('#UserSettingsLink').href = userSettingsUrl;
+    q('#UserSettingsAddress').value = userSettingsUrl;
     function api(path, method, body) {
         const options = {url: ApiClient.getUrl('AnimeSchedule/' + path), type: method || 'GET', dataType: 'json'};
         if (body !== undefined) { options.contentType = 'application/json'; options.data = JSON.stringify(body); }

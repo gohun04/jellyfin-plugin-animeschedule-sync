@@ -1,12 +1,12 @@
-# AnimeSchedule Sync — v0.5.1 for Jellyfin 12
+# AnimeSchedule Sync — v0.5.2 for Jellyfin 12
 
 Continues the v0.4.3 plugin. This release adds multi-user connections while retaining season matching, manual mappings, MAL XML auto-add, progress/status updates, rewatch support, bulk sync and retry tools.
 
 ## Install and migrate
 
 1. Back up your current plugin folder and AnimeSchedule plugin configuration XML. Stop Jellyfin.
-2. Replace the old AnimeSchedule plugin installation with the `AnimeSchedule Sync_0.5.1.0` folder from a manual build. Keep only one installed version of this plugin. Keep the existing configuration XML.
-3. Start Jellyfin and open **AnimeSchedule Connections** from the web sidebar, or use the link in the plugin settings.
+2. Replace the old AnimeSchedule plugin installation with the `AnimeSchedule Sync_0.5.2.0` folder from a manual build. Keep only one installed version of this plugin. Keep the existing configuration XML.
+3. Start Jellyfin and open **AnimeSchedule Connections** as an administrator using the plugin settings link.
 4. Confirm the migrated user's mode and connection status. Configure the shared account under **Server Connection** if desired, then assign users individually.
 
 On first load, the old configured Jellyfin user becomes **Personal** and retains the existing OAuth access token, refresh token and expiry. No other user is enrolled. If the legacy user ID is missing or invalid, existing credentials are retained as an unassigned server connection; all users remain **None** until an administrator assigns them. Migration runs once and clears the old token fields. An OAuth attempt started before upgrading must be restarted. Unknown/new Jellyfin users always resolve to **None**, even when a server account is connected.
@@ -20,7 +20,7 @@ The plugin ID, callback route (`/AnimeSchedule/authCallback`) and AnimeSchedule 
 - **None:** no playback, bulk, seasonal or queued retry synchronization for that user. Stored personal credentials are retained until disconnected.
 - **Allow users to change their own sync mode:** off by default. When off, only administrators can change assignments. Users can still connect/disconnect their own personal credentials. When on, users can change only their own assignment.
 
-The Connections page shows current Jellyfin user names, selected modes and connection status. Non-admins see only their own row. Status reports stored OAuth connection availability; it does not claim to have verified the external account's display name or current token validity. The management dashboard and mapping/manual sync APIs require an administrator. Select a Jellyfin user in the manager before using bulk/season tools.
+The Connections page shows current Jellyfin user names, selected modes and connection status. Regular users open `/AnimeSchedule/account` in a browser and sign in with their Jellyfin account; include the server base path if configured. Share the **User settings link** from the admin Connections page. This standalone page shows only the signed-in user and does not require dashboard access. It is not automatically added to regular users' menus. Passwords are never retained; the Jellyfin session token is stored only in the browser tab until sign-out. Status reports stored OAuth connection availability; it does not claim to have verified the external account's display name or current token validity. The management dashboard and mapping/manual sync APIs require an administrator. Select a Jellyfin user in the manager before using bulk/season tools.
 
 **Shared account warning:** every assigned user's playback contributes to one external anime profile. Progress may overwrite another user's progress, particularly when rewatch mode resets a completed show. The existing Never Decrease Progress option does not prevent a rewatch reset. Shared operations are serialized to avoid concurrent read/write races.
 
@@ -45,9 +45,10 @@ OAuth uses one-time, target-bound PKCE attempts that expire after ten minutes. S
 | `Services/AnimeScheduleManagementService.cs` | Manual/bulk sync uses the selected user's watched state and account |
 | `Services/AnimeScheduleRuntimeState.cs` | User/account-specific retry keys and user-tagged history |
 | `Services/AnimeScheduleRetryService.cs` | Rechecks assignment before retries; respects AutoSync |
+| `Api/AccountPageController.cs`, `Configuration/account.html`, `Configuration/account.js`, `Configuration/account.css` | Standalone regular-user page with authenticated self-service and tab-scoped session |
 | `Configuration/connections.html` | Admin and self-service connection controls, user statuses and shared warning |
 | `Configuration/config.html`, `Configuration/management.html` | Connections links, explicit manual-sync user selection |
-| Project file, `Properties/AssemblyInfo.cs`, `meta.json`, `build.fish` | New embedded page, test access, v0.5.1 packaging |
+| Project file, `Properties/AssemblyInfo.cs`, `meta.json`, `build.fish` | New embedded page, test access, v0.5.2 packaging |
 | `../AnimeScheduleSync.Tests/` | Executable regression checks with simulated Jellyfin dependencies and HTTP responses |
 
 ## Build and test
@@ -56,11 +57,11 @@ Requires .NET 10 SDK; running tests also requires the ASP.NET Core 10 runtime. J
 
 ```sh
 dotnet build AnimeScheduleSync/Jellyfin.Plugin.AnimeScheduleSync.csproj -c Release
-dotnet run --project AnimeScheduleSync.Tests/AnimeScheduleSync.Tests.csproj
+dotnet run --project AnimeScheduleSync.Tests/AnimeScheduleSync.Tests.csproj -- --web
 ```
 
 From inside the plugin folder, `fish build.fish` builds the installable folder. Only the plugin DLL and meta.json belong in the Jellyfin plugin folder; do not copy the test dependencies.
 
-Validation performed: Release build and 39 regression checks passed; JavaScript syntax checked for all three pages; Connections page inspected in a browser using simulated admin and regular-user responses. Tests cover migration/XML persistence, None, personal/shared routing, permission enforcement, token isolation, OAuth state/replay, retry isolation and a mode change during an active write. Existing XML-documentation warnings remain. No live Jellyfin server or AnimeSchedule account was used, so real OAuth approval and deployment still need a smoke test after installation.
+Validation performed: Release build and 49 regression checks passed, including HTTP authentication, permissions, own-user filtering and base-path asset routing. The regular-user page was tested in a browser for sign-in, mode save, reload and sign-out using simulated Jellyfin authentication. Tests cover migration/XML persistence, None, personal/shared routing, permission enforcement, token isolation, OAuth state/replay, retry isolation and a mode change during an active write. Existing XML-documentation warnings remain. No live Jellyfin server or AnimeSchedule account was used, so real OAuth approval and deployment still need a smoke test after installation.
 
 Authorization integration follows Jellyfin's [user ID claim](https://github.com/jellyfin/jellyfin/blob/master/Jellyfin.Api/Constants/InternalClaimTypes.cs), [roles](https://github.com/jellyfin/jellyfin/blob/master/Jellyfin.Api/Constants/UserRoles.cs) and `RequiresElevation` policy; the build targets the locally available Jellyfin 12 packages.

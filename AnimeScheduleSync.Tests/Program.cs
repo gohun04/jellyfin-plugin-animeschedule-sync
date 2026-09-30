@@ -157,6 +157,8 @@ try
     await inFlight; await disable;
     count = handler.Requests.Count;
     Check(!await client.SyncEpisodeAsync(alice, episode, 3, default) && count == handler.Requests.Count, "no further sync occurs after disabling completes");
+    if (args.Contains("--web") || args.Contains("--serve-web"))
+        await AccountWebTests.Run(users, client, runtime, alice, bob, Check, args.Contains("--serve-web"));
     Console.WriteLine($"All {passed} checks passed. No live service was contacted.");
 }
 finally { Directory.Delete(temp, true); }
