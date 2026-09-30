@@ -8,6 +8,14 @@
     "category": "Other",
     "versions": [
       {
+        "version": "0.5.3.0",
+        "changelog": "Private settings sessions expire after five idle minutes or thirty minutes total. Refreshed plugin pages and disconnect confirmations.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/gohun04/jellyfin-plugin-animeschedule-sync/main/packages/animeschedule-sync_0.5.3.0.zip",
+        "checksum": "6ebcbfcb457bc7365887baba124dd95c",
+        "timestamp": "2026-09-30T00:00:00Z"
+      },
+      {
         "version": "0.5.2.0",
         "changelog": "Fix regular-user access: standalone account page with Jellyfin sign-in, shareable settings link and OAuth return link.",
         "targetAbi": "12.0.0.0",

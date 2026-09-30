@@ -35,7 +35,7 @@ public sealed class AnimeScheduleClient
         _users = users;
         _httpClient.Timeout = TimeSpan.FromSeconds(30);
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "Jellyfin-AnimeSchedule-Sync/0.5.2-Jellyfin12");
+            "Jellyfin-AnimeSchedule-Sync/0.5.3-Jellyfin12");
     }
 
     public async Task ExchangeAuthorizationCodeAsync(

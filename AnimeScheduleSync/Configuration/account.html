@@ -16,16 +16,16 @@
 <label for="password">Jellyfin password</label><input id="password" name="password" type="password" autocomplete="current-password">
 <button id="login" type="submit">Sign in</button>
 </form>
-<p class="muted">Your password is sent only to this Jellyfin server. This page keeps its session in this browser tab until you sign out or close the tab.</p>
+<p class="muted">Your password is sent only to this Jellyfin server. You are signed out after 5 minutes of inactivity or 30 minutes total. On shared devices, sign out when finished.</p>
 </section>
 <section id="account-panel" hidden>
 <div class="heading-row"><h2 id="name"></h2><button id="logout" type="button" class="secondary">Sign out</button></div>
-<p id="status"></p>
+<p id="status" class="status-pill"></p><p class="muted session-note">Private settings · Signs out after 5 minutes without activity.</p>
 <label for="mode">Sync mode</label>
 <select id="mode"><option value="None">None — sync disabled</option><option value="Personal">Personal — my anime account</option><option value="ServerShared">Server / Shared — server account</option></select>
 <p id="permission" class="muted"></p>
 <button id="save" type="button">Save mode</button>
-<hr><h3>Personal account</h3><p id="personal-status"></p>
+<hr><p class="eyebrow">YOUR CONNECTION</p><h3>Personal account</h3><p id="personal-status"></p>
 <div class="actions"><button id="connect" type="button">Connect personal account</button><button id="disconnect" type="button" class="secondary">Disconnect personal account</button></div>
 <p class="muted">Connecting an account does not change your sync mode. Select Personal and save to use it, or ask your administrator if mode changes are locked.</p>
 <aside><strong>Sharing an account</strong><p>Everyone using Server / Shared contributes playback to the same anime profile. One person's progress or rewatch may overwrite another's progress.</p></aside>

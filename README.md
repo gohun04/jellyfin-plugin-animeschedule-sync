@@ -44,6 +44,7 @@ Install the .NET 10 SDK and ASP.NET Core 10 runtime, then run:
 ```sh
 dotnet build AnimeScheduleSync -c Release
 dotnet run --project AnimeScheduleSync.Tests -- --web
+node --test AnimeScheduleSync.Tests/account-session.test.cjs
 python3 scripts/package.py
 python3 scripts/validate_catalogue.py
 ```
@@ -51,6 +52,12 @@ python3 scripts/validate_catalogue.py
 The package script produces a versioned ZIP in `packages/`, plus `manifest.json` and SHA-256 checksums. Catalogue ZIPs contain the DLL and metadata directly at their root, as Jellyfin expects. Commit the ZIP and manifest together when publishing a new version. Never replace an already published version's ZIP; increase the version first.
 
 The regression suite uses simulated Jellyfin services and HTTP responses. No real anime account is contacted. Live installation and OAuth still need deployment testing.
+
+## Release 0.5.3
+
+User settings sign out after 5 minutes without interaction or 30 minutes total. Reloading does not extend the session. Expiration clears the local session and attempts to revoke its Jellyfin token; if the server is unreachable, local sign-out still happens. Existing sessions must sign in again after upgrading. Admin dashboard sessions are controlled by Jellyfin and are unchanged.
+
+Refreshed all plugin pages with clearer spacing, responsive user cards, connection status styling and disconnect confirmations.
 
 ## Release 0.5.2
 

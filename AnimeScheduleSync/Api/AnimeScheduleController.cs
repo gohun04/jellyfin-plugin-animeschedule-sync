@@ -275,7 +275,7 @@ public sealed class AnimeScheduleController : ControllerBase
 
         return Ok(new
         {
-            pluginVersion = "0.5.2.0",
+            pluginVersion = "0.5.3.0",
             configurationLoaded = true,
             clientIdLength = config.ClientId?.Length ?? 0,
             clientSecretStored = !string.IsNullOrWhiteSpace(config.ClientSecret),

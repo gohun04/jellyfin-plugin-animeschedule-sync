@@ -1,13 +1,35 @@
 <!DOCTYPE html>
 <html><head><title>AnimeSchedule Connections</title></head><body>
 <div id="AnimeConnectionsPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-checkbox">
+
+<style>
+#AnimeConnectionsPage .content-primary{max-width:1120px;margin:0 auto;padding-bottom:3rem}
+#AnimeConnectionsPage h1,#AnimeConnectionsPage h2{letter-spacing:-.025em}
+#AnimeConnectionsPage p{line-height:1.6}
+#AnimeConnectionsPage .raised{border-radius:9px;padding:.7rem 1rem;margin:.3rem;min-height:44px}
+#AnimeConnectionsPage #UserSettingsAddress{box-sizing:border-box;background:#172331;color:#eef4fa;border:1px solid #64768a;border-radius:8px;font:inherit}
+#AnimeConnectionsPage select{background:#172331;color:#eef4fa;border:1px solid #64768a;border-radius:8px;padding:.65rem;max-width:100%}
+#AnimeConnectionsPage input:focus-visible,#AnimeConnectionsPage select:focus-visible,#AnimeConnectionsPage button:focus-visible,#AnimeConnectionsPage a:focus-visible{outline:3px solid #78caff;outline-offset:3px}
+#AnimeConnectionsPage .as-panel,#AnimeConnectionsPage #ServerControls,#AnimeConnectionsPage #ConnectionUsers section{border:1px solid #52647755;border-radius:14px;padding:1.4rem;margin:1.2rem 0;background:rgba(100,140,180,.06)}
+#AnimeConnectionsPage #ConnectionUsers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:1rem}
+#AnimeConnectionsPage #ConnectionUsers section{margin:0}
+#AnimeConnectionsPage #ConnectionUsers section h3{margin-top:0;font-size:1.25rem}
+#AnimeConnectionsPage #ConnectionUsers section>p:first-of-type{border-left:3px solid #69bfe5;padding-left:.8rem}
+#AnimeConnectionsPage #ConnectionUsers section label{display:block;margin:1rem 0}
+#AnimeConnectionsPage #ConnectionMessage:not(:empty){background:#244657;color:#effaff;border-radius:9px;padding:1rem}
+#AnimeConnectionsPage .as-warning{border-left:3px solid #dfb75b;background:#a87c1714;padding:1rem;border-radius:8px}
+#AnimeConnectionsPage .inputContainer{margin-bottom:1.8rem}
+#AnimeConnectionsPage .as-card{border-radius:14px;background:rgba(100,140,180,.07);padding:1.3rem}
+#AnimeConnectionsPage .as-section{border-top:1px solid #74879b44;padding-top:1.5rem}
+@media(max-width:600px){#AnimeConnectionsPage .raised{margin:.3rem 0;max-width:100%}#AnimeConnectionsPage #ServerControls{padding:1rem}}
+</style>
 <div data-role="content"><div class="content-primary" style="max-width:1000px">
 <h1>AnimeSchedule Connections</h1>
 <p>Choose where each Jellyfin user's watched anime progress is sent. New users start with None.</p>
-<p><strong>Shared account warning:</strong> Everyone using Server / Shared contributes playback activity to the same external anime profile. One user's progress may overwrite another's, including when starting a rewatch.</p>
+<p class="as-warning"><strong>Shared account warning:</strong> Everyone using Server / Shared contributes playback activity to the same external anime profile. One user's progress may overwrite another's, including when starting a rewatch.</p>
 <p id="ConnectionMessage" role="status"></p>
 <div id="ServerControls" hidden>
-<h2>User settings link</h2>
+<h2>User settings link</h2><p>Private account settings with automatic sign-out after 5 minutes of inactivity.</p>
 <p>Share this link with regular users. They sign in with their own Jellyfin account and only see their own connection. Jellyfin's plugin sidebar entries are admin-only.</p>
 <p><a id="UserSettingsLink" target="_blank" rel="noopener">Open user settings</a></p>
 <input id="UserSettingsAddress" type="text" readonly aria-label="User settings link" style="width:100%;padding:.6rem" />
@@ -48,6 +70,7 @@
         window.location.assign(data.url);
     }
     async function disconnect(userId) {
+        if (!window.confirm(userId ? 'Disconnect this personal anime account?' : 'Disconnect the server account? Sync will stop for everyone using Server / Shared.')) return;
         await api('connections/disconnect' + (userId ? '?userId=' + encodeURIComponent(userId) : ''), 'POST');
         await load();
     }
@@ -61,7 +84,7 @@
             q('#ModePermission').textContent = !data.isAdmin && !data.allowUsersToChangeSyncMode ? 'Your administrator controls your sync mode.' : '';
             q('#ConnectionUsers').replaceChildren();
             for (const user of data.users) {
-                const row = document.createElement('section'); row.style.cssText = 'padding:1rem 0;border-bottom:1px solid #888';
+                const row = document.createElement('section'); row.className = 'connection-card';
                 const title = document.createElement('h3'); title.textContent = user.name; row.append(title);
                 const status = document.createElement('p'); status.textContent = user.status; row.append(status);
                 const label = document.createElement('label'); label.textContent = 'Sync mode: ';

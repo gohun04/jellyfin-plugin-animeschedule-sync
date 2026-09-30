@@ -9,7 +9,28 @@
      class="page type-interior pluginConfigurationPage"
      data-require="emby-input,emby-button,emby-checkbox">
 
-    <div data-role="content">
+    
+<style>
+#AnimeScheduleSyncConfigPage .content-primary{max-width:1120px;margin:0 auto;padding-bottom:3rem}
+#AnimeScheduleSyncConfigPage h1,#AnimeScheduleSyncConfigPage h2{letter-spacing:-.025em}
+#AnimeScheduleSyncConfigPage p{line-height:1.6}
+#AnimeScheduleSyncConfigPage .raised{border-radius:9px;padding:.7rem 1rem;margin:.3rem;min-height:44px}
+#AnimeScheduleSyncConfigPage select{background:#172331;color:#eef4fa;border:1px solid #64768a;border-radius:8px;padding:.65rem;max-width:100%}
+#AnimeScheduleSyncConfigPage input:focus-visible,#AnimeScheduleSyncConfigPage select:focus-visible,#AnimeScheduleSyncConfigPage button:focus-visible,#AnimeScheduleSyncConfigPage a:focus-visible{outline:3px solid #78caff;outline-offset:3px}
+#AnimeScheduleSyncConfigPage .as-panel,#AnimeScheduleSyncConfigPage #ServerControls,#AnimeScheduleSyncConfigPage #ConnectionUsers section{border:1px solid #52647755;border-radius:14px;padding:1.4rem;margin:1.2rem 0;background:rgba(100,140,180,.06)}
+#AnimeScheduleSyncConfigPage #ConnectionUsers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:1rem}
+#AnimeScheduleSyncConfigPage #ConnectionUsers section{margin:0}
+#AnimeScheduleSyncConfigPage #ConnectionUsers section h3{margin-top:0;font-size:1.25rem}
+#AnimeScheduleSyncConfigPage #ConnectionUsers section>p:first-of-type{border-left:3px solid #69bfe5;padding-left:.8rem}
+#AnimeScheduleSyncConfigPage #ConnectionUsers section label{display:block;margin:1rem 0}
+#AnimeScheduleSyncConfigPage #ConnectionMessage:not(:empty){background:#244657;color:#effaff;border-radius:9px;padding:1rem}
+#AnimeScheduleSyncConfigPage .as-warning{border-left:3px solid #dfb75b;background:#a87c1714;padding:1rem;border-radius:8px}
+#AnimeScheduleSyncConfigPage .inputContainer{margin-bottom:1.8rem}
+#AnimeScheduleSyncConfigPage .as-card{border-radius:14px;background:rgba(100,140,180,.07);padding:1.3rem}
+#AnimeScheduleSyncConfigPage .as-section{border-top:1px solid #74879b44;padding-top:1.5rem}
+@media(max-width:600px){#AnimeScheduleSyncConfigPage .raised{margin:.3rem 0;max-width:100%}#AnimeScheduleSyncConfigPage #ServerControls{padding:1rem}}
+</style>
+<div data-role="content">
         <div class="content-primary">
             <form id="AnimeScheduleSyncConfigForm">
                 <div class="verticalSection">

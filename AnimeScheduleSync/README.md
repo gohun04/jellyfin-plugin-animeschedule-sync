@@ -1,11 +1,11 @@
-# AnimeSchedule Sync — v0.5.2 for Jellyfin 12
+# AnimeSchedule Sync — v0.5.3 for Jellyfin 12
 
 Continues the v0.4.3 plugin. This release adds multi-user connections while retaining season matching, manual mappings, MAL XML auto-add, progress/status updates, rewatch support, bulk sync and retry tools.
 
 ## Install and migrate
 
 1. Back up your current plugin folder and AnimeSchedule plugin configuration XML. Stop Jellyfin.
-2. Replace the old AnimeSchedule plugin installation with the `AnimeSchedule Sync_0.5.2.0` folder from a manual build. Keep only one installed version of this plugin. Keep the existing configuration XML.
+2. Replace the old AnimeSchedule plugin installation with the `AnimeSchedule Sync_0.5.3.0` folder from a manual build. Keep only one installed version of this plugin. Keep the existing configuration XML.
 3. Start Jellyfin and open **AnimeSchedule Connections** as an administrator using the plugin settings link.
 4. Confirm the migrated user's mode and connection status. Configure the shared account under **Server Connection** if desired, then assign users individually.
 
@@ -48,7 +48,7 @@ OAuth uses one-time, target-bound PKCE attempts that expire after ten minutes. S
 | `Api/AccountPageController.cs`, `Configuration/account.html`, `Configuration/account.js`, `Configuration/account.css` | Standalone regular-user page with authenticated self-service and tab-scoped session |
 | `Configuration/connections.html` | Admin and self-service connection controls, user statuses and shared warning |
 | `Configuration/config.html`, `Configuration/management.html` | Connections links, explicit manual-sync user selection |
-| Project file, `Properties/AssemblyInfo.cs`, `meta.json`, `build.fish` | New embedded page, test access, v0.5.2 packaging |
+| Project file, `Properties/AssemblyInfo.cs`, `meta.json`, `build.fish` | New embedded page, test access, v0.5.3 packaging |
 | `../AnimeScheduleSync.Tests/` | Executable regression checks with simulated Jellyfin dependencies and HTTP responses |
 
 ## Build and test
@@ -65,3 +65,7 @@ From inside the plugin folder, `fish build.fish` builds the installable folder. 
 Validation performed: Release build and 49 regression checks passed, including HTTP authentication, permissions, own-user filtering and base-path asset routing. The regular-user page was tested in a browser for sign-in, mode save, reload and sign-out using simulated Jellyfin authentication. Tests cover migration/XML persistence, None, personal/shared routing, permission enforcement, token isolation, OAuth state/replay, retry isolation and a mode change during an active write. Existing XML-documentation warnings remain. No live Jellyfin server or AnimeSchedule account was used, so real OAuth approval and deployment still need a smoke test after installation.
 
 Authorization integration follows Jellyfin's [user ID claim](https://github.com/jellyfin/jellyfin/blob/master/Jellyfin.Api/Constants/InternalClaimTypes.cs), [roles](https://github.com/jellyfin/jellyfin/blob/master/Jellyfin.Api/Constants/UserRoles.cs) and `RequiresElevation` policy; the build targets the locally available Jellyfin 12 packages.
+
+### Private settings sessions
+
+The user account page signs out after five minutes of inactivity or thirty minutes total. Reload and background-tab return preserve these deadlines. Token revocation is best-effort when offline; local credentials are cleared regardless. Admin dashboard sessions remain controlled by Jellyfin. Seven JavaScript regression tests cover session expiry and activity behavior.
